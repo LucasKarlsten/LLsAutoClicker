@@ -1,7 +1,6 @@
 import tkinter as tk
-from tkinter import simpledialog
-import pyautogui
 import threading
+import pyautogui
 import time
 import json
 import keyboard
@@ -20,45 +19,47 @@ os.makedirs(profile_dir, exist_ok=True)
 def get_profile_path(profile_name):
     return os.path.join(profile_dir, f"{profile_name}.json")
 
-# === Status Label updater ===
-def update_status(message, color="black"):
+# === Tkinter Root & Styling ===
+root = tk.Tk()
+root.title("LucceLito's Auto-Cliccer")
+root.geometry("330x700")
+root.configure(bg="#2e2e2e")  # Dark background
+root.resizable(False, False)
+
+def center_window(window, width=320, height=110):
+    # Get main window position and size
+    root_x = root.winfo_x()
+    root_y = root.winfo_y()
+    root_w = root.winfo_width()
+    root_h = root.winfo_height()
+    
+    # Calculate position to center the popup over root
+    x = root_x + (root_w // 2) - (width // 2)
+    y = root_y + (root_h // 2) - (height // 2)
+    
+    # Set the geometry of the popup
+    window.geometry(f"{width}x{height}+{x}+{y}")
+
+
+# === Status Label ===
+status_label = tk.Label(root, text="", fg="lightgray", bg="#2e2e2e",
+                        anchor="center", font=("Segoe UI", 11, "bold"))
+status_label.pack(fill="x", padx=10, pady=5)
+
+def update_status(message, color="lightgray"):
     status_label.config(text=message, fg=color)
 
-# === Custom Modal Input Dialog ===
-def modal_input(title, prompt, validate_func=None):
-    result = {'value': None}
-    def on_ok():
-        val = entry.get()
-        if validate_func:
-            valid, msg = validate_func(val)
-            if not valid:
-                update_status(msg, "orange")
-                return
-        result['value'] = val
-        dialog.destroy()
 
-    def on_cancel():
-        dialog.destroy()
+# === Position Listbox ===
+listbox = tk.Listbox(root, width=45, height=10, bg="#3b3b3b", fg="white",
+                     selectbackground="#575757", selectforeground="white",
+                     font=("Segoe UI", 10))
+listbox.pack(pady=5)
 
-    dialog = tk.Toplevel(root)
-    dialog.title(title)
-    dialog.grab_set()
-    dialog.geometry("300x100")
-    dialog.resizable(False, False)
-    dialog.transient(root)
-
-    tk.Label(dialog, text=prompt).pack(pady=5)
-    entry = tk.Entry(dialog)
-    entry.pack(pady=5)
-    entry.focus_set()
-
-    btn_frame = tk.Frame(dialog)
-    btn_frame.pack(pady=5)
-    tk.Button(btn_frame, text="OK", width=10, command=on_ok).pack(side="left", padx=5)
-    tk.Button(btn_frame, text="Cancel", width=10, command=on_cancel).pack(side="left", padx=5)
-
-    root.wait_window(dialog)
-    return result['value']
+def update_position_list():
+    listbox.delete(0, tk.END)
+    for idx, pos in enumerate(positions):
+        listbox.insert(tk.END, f"{idx+1}: {pos}")
 
 # === Clicking Loop ===
 def click_loop():
@@ -72,45 +73,40 @@ def click_loop():
 def start_clicking():
     global clicking
     if not positions:
-        update_status("Warning: Please add at least one click position.", "orange")
+        update_status("Please add at least one click position.", "orange")
         return
     if not clicking:
         clicking = True
         threading.Thread(target=click_loop, daemon=True).start()
-        update_status("Clicking started.", "green")
+        update_status("Clicking started.", "#4CAF50")
 
 def stop_clicking():
     global clicking
     clicking = False
-    update_status("Clicking stopped.", "red")
+    update_status("Clicking stopped.", "#f44336")
 
 # === Position Management ===
 def add_position():
-    update_status("Move your mouse to the new position in 2 seconds...", "blue")
+    update_status("Move mouse to position in 2 seconds...", "#2196F3")
     time.sleep(2)
     pos = pyautogui.position()
     positions.append(pos)
     update_position_list()
-    update_status(f"Added position: {pos}", "green")
+    update_status(f"Added position: {pos}", "#4CAF50")
 
 def delete_selected_position():
     selected = listbox.curselection()
     if selected:
         del positions[selected[0]]
         update_position_list()
-        update_status("Selected position removed.", "green")
+        update_status("Selected position removed.", "#4CAF50")
     else:
         update_status("No position selected to remove.", "orange")
 
 def clear_positions():
     positions.clear()
     update_position_list()
-    update_status("All positions cleared.", "green")
-
-def update_position_list():
-    listbox.delete(0, tk.END)
-    for idx, pos in enumerate(positions):
-        listbox.insert(tk.END, f"{idx+1}: {pos}")
+    update_status("All positions cleared.", "#4CAF50")
 
 # === Click Interval ===
 def validate_interval(val):
@@ -122,14 +118,64 @@ def validate_interval(val):
     except:
         return False, "Invalid number for interval."
 
+def modal_input(title, prompt, validate_func=None):
+    result = {'value': None}
+    def on_ok(event=None):
+        val = entry.get()
+        if validate_func:
+            valid, msg = validate_func(val)
+            if not valid:
+                update_status(msg, "orange")
+                return
+        result['value'] = val
+        dialog.destroy()
+
+    def on_cancel(event=None):
+        dialog.destroy()
+
+    dialog = tk.Toplevel(root)
+    dialog.title(title)
+    dialog.grab_set()
+    center_window(dialog, 320, 110)
+    dialog.resizable(False, False)
+    dialog.transient(root)
+    dialog.configure(bg="#2e2e2e")
+
+    tk.Label(dialog, text=prompt, bg="#2e2e2e", fg="lightgray", font=("Segoe UI", 10)).pack(pady=8)
+
+    entry = tk.Entry(dialog, font=("Segoe UI", 11))
+    entry.pack(pady=5)
+    entry.focus_set()
+    entry.bind("<Return>", on_ok)
+    entry.bind("<Escape>", on_cancel)
+
+    btn_frame = tk.Frame(dialog, bg="#2e2e2e")
+    btn_frame.pack(pady=5)
+
+    ok_btn = tk.Button(btn_frame, text="OK", width=10, command=on_ok,
+                       bg="#4CAF50", fg="white", font=("Segoe UI", 10, "bold"),
+                       activebackground="#45a049", activeforeground="white")
+    ok_btn.pack(side="left", padx=8)
+
+    cancel_btn = tk.Button(btn_frame, text="Cancel", width=10, command=on_cancel,
+                           bg="#f44336", fg="white", font=("Segoe UI", 10, "bold"),
+                           activebackground="#d32f2f", activeforeground="white")
+    cancel_btn.pack(side="left", padx=8)
+
+    root.wait_window(dialog)
+    return result['value']
+
 def set_interval():
-    val = modal_input("Set Click Interval", "Enter click interval (seconds):", validate_interval)
+    val = modal_input("Set Click Interval", "Enter click interval (Seconds):", validate_interval)
     if val is not None:
         global click_interval
         click_interval = float(val)
-        update_status(f"Click interval set to {click_interval} seconds.", "green")
+        update_status(f"Click interval set to {click_interval} seconds.", "#4CAF50")
 
 # === Profile Management ===
+def get_profile_path(profile_name):
+    return os.path.join(profile_dir, f"{profile_name}.json")
+
 def save_profile():
     if not positions:
         update_status("Add positions before saving profile.", "orange")
@@ -142,7 +188,7 @@ def save_profile():
         with open(get_profile_path(name), "w") as f:
             json.dump(positions, f)
         update_profile_list()
-        update_status(f"Profile '{name}' saved.", "green")
+        update_status(f"Profile '{name}' saved.", "#4CAF50")
     except Exception as e:
         update_status(f"Error saving profile: {e}", "red")
 
@@ -157,19 +203,54 @@ def load_profile(event=None):
         global positions
         positions = [tuple(pos) for pos in loaded]
         update_position_list()
-        update_status(f"Profile '{selected}' loaded.", "green")
+        update_status(f"Profile '{selected}' loaded.", "#4CAF50")
     except Exception as e:
         update_status(f"Error loading profile: {e}", "red")
+
+def modal_confirm(question):
+    result = {'answer': False}
+
+    def on_yes(event=None):
+        result['answer'] = True
+        dialog.destroy()
+
+    def on_no(event=None):
+        dialog.destroy()
+
+    dialog = tk.Toplevel(root)
+    dialog.title("Confirm")
+    dialog.grab_set()
+    center_window(dialog, 320, 110)
+    dialog.resizable(False, False)
+    dialog.transient(root)
+    dialog.configure(bg="#2e2e2e")
+
+    tk.Label(dialog, text=question, bg="#2e2e2e", fg="lightgray",
+             font=("Segoe UI", 11, "bold")).pack(pady=20)
+
+    btn_frame = tk.Frame(dialog, bg="#2e2e2e")
+    btn_frame.pack(pady=5)
+
+    yes_btn = tk.Button(btn_frame, text="Yes", width=10, command=on_yes,
+                        bg="#4CAF50", fg="white", font=("Segoe UI", 10, "bold"),
+                        activebackground="#45a049", activeforeground="white")
+    yes_btn.pack(side="left", padx=8)
+    yes_btn.bind("<Return>", on_yes)
+
+    no_btn = tk.Button(btn_frame, text="No", width=10, command=on_no,
+                       bg="#f44336", fg="white", font=("Segoe UI", 10, "bold"),
+                       activebackground="#d32f2f", activeforeground="white")
+    no_btn.pack(side="left", padx=8)
+    no_btn.bind("<Return>", on_no)
+
+    root.wait_window(dialog)
+    return result['answer']
 
 def delete_profile():
     selected = profile_var.get()
     if not selected:
         update_status("No profile selected to delete.", "orange")
         return
-    # Confirm deletion inside GUI with modal input dialog (Yes/No)
-    answer = tk.messagebox.askyesno("Delete Profile", f"Are you sure you want to delete profile '{selected}'?")
-    # Since you asked for no popups, replace above with inline confirmation:
-    # We'll do a simple confirmation modal instead:
     confirm = modal_confirm(f"Delete profile '{selected}'?")
     if not confirm:
         update_status("Profile deletion cancelled.", "orange")
@@ -177,7 +258,7 @@ def delete_profile():
     try:
         os.remove(get_profile_path(selected))
         update_profile_list()
-        update_status(f"Profile '{selected}' deleted.", "green")
+        update_status(f"Profile '{selected}' deleted.", "#4CAF50")
     except Exception as e:
         update_status(f"Error deleting profile: {e}", "red")
 
@@ -191,34 +272,6 @@ def update_profile_list():
     else:
         profile_var.set('')
 
-# === Modal Confirm Dialog ===
-def modal_confirm(question):
-    result = {'answer': False}
-
-    def on_yes():
-        result['answer'] = True
-        dialog.destroy()
-
-    def on_no():
-        dialog.destroy()
-
-    dialog = tk.Toplevel(root)
-    dialog.title("Confirm")
-    dialog.grab_set()
-    dialog.geometry("300x100")
-    dialog.resizable(False, False)
-    dialog.transient(root)
-
-    tk.Label(dialog, text=question).pack(pady=10)
-
-    btn_frame = tk.Frame(dialog)
-    btn_frame.pack(pady=5)
-    tk.Button(btn_frame, text="Yes", width=10, command=on_yes).pack(side="left", padx=5)
-    tk.Button(btn_frame, text="No", width=10, command=on_no).pack(side="left", padx=5)
-
-    root.wait_window(dialog)
-    return result['answer']
-
 # === Hotkey Toggle (F8) ===
 def toggle_clicking_hotkey():
     global clicking
@@ -229,51 +282,59 @@ def toggle_clicking_hotkey():
 
 keyboard.add_hotkey('f8', toggle_clicking_hotkey)
 
-# === GUI Setup ===
-root = tk.Tk()
-root.title("LucceLito's Cliccer")
-root.geometry("400x550")
+# === GUI Layout ===
 
-# Profile frame horizontal layout
-profile_frame = tk.Frame(root)
-profile_frame.pack(pady=5)
-
-tk.Label(profile_frame, text="Select Profile:").grid(row=0, column=0, padx=5)
+# Profile frame for profile management
+profile_frame = tk.Frame(root, bg="#2e2e2e")
+profile_frame.pack(pady=10)
 
 profile_var = tk.StringVar(root)
-profile_menu = tk.OptionMenu(profile_frame, profile_var, [])
+tk.Label(profile_frame, text="Select Profile:", bg="#2e2e2e", fg="lightgray", font=("Segoe UI", 10, "bold")).grid(row=0, column=0, padx=5)
+
+profile_menu = tk.OptionMenu(profile_frame, profile_var, ())
+profile_menu.config(bg="#444", fg="white", activebackground="#575757", activeforeground="white", font=("Segoe UI", 10))
 profile_menu.grid(row=0, column=1, padx=5)
 
-tk.Button(profile_frame, text="Save Profile", command=save_profile).grid(row=0, column=2, padx=5)
-tk.Button(profile_frame, text="Delete Profile", command=delete_profile).grid(row=0, column=3, padx=5)
+btn_style = {
+    "bg": "#444", "fg": "white", "activebackground": "#575757",
+    "activeforeground": "white", "font": ("Segoe UI", 10, "bold"),
+    "width": 20, "height": 1,
+}
 
-# Start/Stop Buttons
-tk.Button(root, text="Start (F8)", bg="lightgreen", command=start_clicking).pack(pady=5)
-tk.Button(root, text="Stop (F8)", bg="tomato", command=stop_clicking).pack(pady=5)
+# Group buttons in frames for clarity
 
-# Interval Setting
-tk.Button(root, text="Set Click Interval", command=set_interval).pack(pady=5)
+# Clicking controls frame
+click_frame = tk.LabelFrame(root, text="Click Controls", fg="lightgray", bg="#2e2e2e", font=("Segoe UI", 11, "bold"))
+click_frame.pack(pady=8, fill="x", padx=10)
 
-# Position Controls
-tk.Button(root, text="Add Position (2s to move mouse)", command=lambda: threading.Thread(target=add_position, daemon=True).start()).pack(pady=5)
-tk.Button(root, text="Remove Selected Position", command=delete_selected_position).pack(pady=5)
-tk.Button(root, text="Clear All Positions", command=clear_positions).pack(pady=5)
+tk.Button(click_frame, text="Start (F8)", command=start_clicking,
+          bg="#4CAF50", fg="white", font=("Segoe UI", 11, "bold"), width=9).pack(side="left", padx=5, pady=8)
+tk.Button(click_frame, text="Stop (F8)", command=stop_clicking,
+          bg="#f44336", fg="white", font=("Segoe UI", 11, "bold"), width=9).pack(side="left", padx=5, pady=8)
+tk.Button(click_frame, text="Set Interval", command=set_interval,
+          bg="#00BCD4", fg="white", font=("Segoe UI", 11, "bold"), width=9).pack(side="left", padx=5, pady=8)
 
-# Position Listbox
-listbox = tk.Listbox(root, width=40, height=10)
-listbox.pack(pady=5)
+# Position management frame
+pos_frame = tk.LabelFrame(root, text="Positions", fg="lightgray", bg="#2e2e2e", font=("Segoe UI", 11, "bold"))
+pos_frame.pack(pady=8, fill="x", padx=10)
 
-# Instruction Label
-tk.Label(root, text="Press F8 at any time to Start/Stop").pack(pady=10)
+tk.Button(pos_frame, text="Add Position (2s to move mouse)", command=lambda: threading.Thread(target=add_position, daemon=True).start(), **btn_style).pack(pady=5, padx=10, fill="x")
+tk.Button(pos_frame, text="Remove Selected Position", command=delete_selected_position, **btn_style).pack(pady=5, padx=10, fill="x")
+tk.Button(pos_frame, text="Clear All Positions", command=clear_positions, **btn_style).pack(pady=5, padx=10, fill="x")
 
-# Status Label (no pop-ups, messages here)
-status_label = tk.Label(root, text="", fg="black", anchor="w")
-status_label.pack(fill="x", padx=10, pady=5)
+# Profile management frame
+profile_mgmt_frame = tk.LabelFrame(root, text="Profiles", fg="lightgray", bg="#2e2e2e", font=("Segoe UI", 11, "bold"))
+profile_mgmt_frame.pack(pady=8, fill="x", padx=10)
 
-# Footer / Credit
-tk.Label(root, text="Made by LucceLito", font=("Arial", 8), fg="gray").pack(side="bottom", pady=5)
+tk.Button(profile_mgmt_frame, text="Save Profile", command=save_profile, **btn_style).pack(pady=5, padx=10, fill="x")
+tk.Button(profile_mgmt_frame, text="Delete Profile", command=delete_profile, **btn_style).pack(pady=5, padx=10, fill="x")
 
-# Initialize profile list on startup
+# Credits label
+credits = tk.Label(root, text="Made by LucceLito and ChatGPT", bg="#2e2e2e", fg="gray", font=("Segoe UI", 9, "italic"))
+credits.pack(side="bottom", pady=6)
+
+# Initialize profile list & position list
 update_profile_list()
+update_position_list()
 
 root.mainloop()
