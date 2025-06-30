@@ -20,7 +20,6 @@ pip-delete-this-directory.txt
 # PyInstaller
 #  Usually these folders/files are created by PyInstaller
 *.manifest
-*.spec
 *.exe
 *.dll
 *.pyd
