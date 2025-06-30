@@ -30,6 +30,7 @@ A customizable auto-clicker with GUI built in Python using Tkinter and PyAutoGUI
 
 - Run the program with administrator privileges if hotkeys don’t work.
 - Make sure to allow the program to control your mouse for the clicking to work.
+- If you build the .exe, the profiles will not work. I just wanted to try this, feel free to ignore it :)
 
 ---
 
