@@ -50,3 +50,5 @@ profiles
 # Others
 *.bak
 *.swp
+.venv/
+.envrc
