@@ -10,6 +10,9 @@ import os
 positions = []
 clicking = False
 click_interval = 0.5
+holding_click = False
+hold_key = "left"  # Default till vänsterklick
+
 
 # Profile folder
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -22,7 +25,7 @@ def get_profile_path(profile_name):
 # === Tkinter Root & Styling ===
 root = tk.Tk()
 root.title("LucceLito's Auto-Cliccer")
-root.geometry("330x700")
+root.geometry("330x750")
 root.configure(bg="#2e2e2e")  # Dark background
 root.resizable(False, False)
 
@@ -84,6 +87,56 @@ def stop_clicking():
     global clicking
     clicking = False
     update_status("Clicking stopped.", "#f44336")
+
+def hold_click_loop():
+    global holding_click
+    if not positions:
+        update_status("Please add at least one click position.", "orange")
+        holding_click = False
+        return
+
+    pos = positions[0]
+    pyautogui.moveTo(pos)
+
+    if hold_key.lower() == "left":
+        pyautogui.mouseDown()
+    else:
+        keyboard.press(hold_key)
+
+    update_status(f"Holding '{hold_key.upper()}' at {pos}. Press F9 to release.", "#FF9800")
+
+    while holding_click:
+        time.sleep(0.1)
+
+    if hold_key.lower() == "left":
+        pyautogui.mouseUp()
+    else:
+        keyboard.release(hold_key)
+
+    update_status(f"Released '{hold_key.upper()}'.", "#f44336")
+
+def set_hold_key():
+    def validate_key(keyname):
+        # Allow any string key, or "left" for mouse
+        return True, "" if keyname else (False, "Key cannot be empty.")
+
+    val = modal_input("Set Hold Key", "Enter key to hold (e.g. A, space, left):", validate_key)
+    if val:
+        global hold_key
+        hold_key = val.lower()
+        update_status(f"Hold key set to '{hold_key.upper()}'.", "#4CAF50")
+
+def start_holding_click():
+    global holding_click
+    if holding_click:
+        update_status("Already holding.", "orange")
+        return
+    holding_click = True
+    threading.Thread(target=hold_click_loop, daemon=True).start()
+
+def stop_holding_click():
+    global holding_click
+    holding_click = False
 
 # === Position Management ===
 def add_position():
@@ -281,6 +334,8 @@ def toggle_clicking_hotkey():
         start_clicking()
 
 keyboard.add_hotkey('f8', toggle_clicking_hotkey)
+keyboard.add_hotkey('f9', lambda: stop_holding_click() if holding_click else start_holding_click())
+
 
 # === GUI Layout ===
 
@@ -307,12 +362,25 @@ btn_style = {
 click_frame = tk.LabelFrame(root, text="Click Controls", fg="lightgray", bg="#2e2e2e", font=("Segoe UI", 11, "bold"))
 click_frame.pack(pady=8, fill="x", padx=10)
 
-tk.Button(click_frame, text="Start (F8)", command=start_clicking,
+# Rad 1
+click_row1 = tk.Frame(click_frame, bg="#2e2e2e")
+click_row1.pack(fill="x", padx=5)
+
+# Rad 2
+click_row2 = tk.Frame(click_frame, bg="#2e2e2e")
+click_row2.pack(fill="x", padx=5, pady=(5, 0))
+
+
+tk.Button(click_row1, text="Start (F8)", command=start_clicking,
           bg="#4CAF50", fg="white", font=("Segoe UI", 11, "bold"), width=9).pack(side="left", padx=5, pady=8)
-tk.Button(click_frame, text="Stop (F8)", command=stop_clicking,
+tk.Button(click_row1, text="Stop (F8)", command=stop_clicking,
           bg="#f44336", fg="white", font=("Segoe UI", 11, "bold"), width=9).pack(side="left", padx=5, pady=8)
-tk.Button(click_frame, text="Set Interval", command=set_interval,
+tk.Button(click_row1, text="Set Interval", command=set_interval,
           bg="#00BCD4", fg="white", font=("Segoe UI", 11, "bold"), width=9).pack(side="left", padx=5, pady=8)
+tk.Button(click_row2, text="Set Hold Key", command=set_hold_key,
+          bg="#9C27B0", fg="white", font=("Segoe UI", 11, "bold"), width=12).pack(side="left", padx=20, pady=8)
+tk.Button(click_row2, text="Hold Key (F9)", command=lambda: stop_holding_click() if holding_click else start_holding_click(),
+          bg="#FF9800", fg="white", font=("Segoe UI", 11, "bold"), width=12).pack(side="right", padx=20, pady=8)
 
 # Position management frame
 pos_frame = tk.LabelFrame(root, text="Positions", fg="lightgray", bg="#2e2e2e", font=("Segoe UI", 11, "bold"))

@@ -16,7 +16,7 @@ A customizable auto-clicker with GUI built in Python using Tkinter and PyAutoGUI
 ## Installation
 
 1. Make sure you have Python 3 installed
-2. Install dependencies: pip install pyautogui keyboard 
+2. Install dependencies: ` pip install pyautogui keyboard `
 4. Run the script
 
 ## Usage
