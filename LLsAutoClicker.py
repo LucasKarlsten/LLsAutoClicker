@@ -382,7 +382,7 @@ click_row1.pack(fill="x", padx=5)
 
 # Rad 2
 click_row2 = tk.Frame(click_frame, bg="#2e2e2e")
-click_row2.pack(fill="x", padx=5, pady=(5, 0))
+click_row2.pack(fill="x", padx=5, pady=(1, 0))
 
 
 tk.Button(click_row1, text="Start (F8)", command=start_clicking,
@@ -392,9 +392,9 @@ tk.Button(click_row1, text="Stop (F8)", command=stop_clicking,
 tk.Button(click_row1, text="Set Interval", command=set_interval,
           bg="#00BCD4", fg="white", font=("Segoe UI", 11, "bold"), width=9).pack(side="left", padx=5, pady=8)
 tk.Button(click_row2, text="Set Hold Key", command=set_hold_key,
-          bg="#9C27B0", fg="white", font=("Segoe UI", 11, "bold"), width=12).pack(side="left", padx=20, pady=8)
+          bg="#9C27B0", fg="white", font=("Segoe UI", 11, "bold"), width=10).pack(side="left", padx=3, pady=8)
 tk.Button(click_row2, text="Hold Key (F9)", command=lambda: stop_holding_click() if holding_click else start_holding_click(),
-          bg="#FF9800", fg="white", font=("Segoe UI", 11, "bold"), width=12).pack(side="right", padx=20, pady=8)
+          bg="#FF9800", fg="white", font=("Segoe UI", 11, "bold"), width=10).pack(side="right", padx=3, pady=8)
 tk.Button(click_row2, text="Set Start/Stop Key", command=set_start_stop_key,
           bg="#03A9F4", fg="white", font=("Segoe UI", 11, "bold"), width=25).pack(pady=8)
 
