@@ -12,6 +12,7 @@ clicking = False
 click_interval = 0.5
 holding_click = False
 hold_key = "left"  # Default till vänsterklick
+start_stop_key = "f8"
 
 
 # Profile folder
@@ -165,11 +166,24 @@ def clear_positions():
 def validate_interval(val):
     try:
         v = float(val)
-        if v < 0.01 or v > 10:
-            return False, "Interval must be between 0.01 and 10 seconds."
+        if v < 0.001 or v > 1800:
+            return False, "Interval must be between 0.001 and 1800 seconds (30 min)."
         return True, ""
     except:
         return False, "Invalid number for interval."
+
+def set_start_stop_key():
+    def validate_key(k):
+        return (True, "") if k else (False, "Key cannot be empty.")
+
+    val = modal_input("Set Start/Stop Key", "Enter key to toggle clicking (e.g. F8, z):", validate_key)
+    if val:
+        global start_stop_key
+        keyboard.remove_hotkey(start_stop_key)  # Remove old hotkey
+        start_stop_key = val.lower()
+        keyboard.add_hotkey(start_stop_key, toggle_clicking_hotkey)  # Add new one
+        update_status(f"Start/stop key set to '{start_stop_key.upper()}'.", "#4CAF50")
+
 
 def modal_input(title, prompt, validate_func=None):
     result = {'value': None}
@@ -381,6 +395,9 @@ tk.Button(click_row2, text="Set Hold Key", command=set_hold_key,
           bg="#9C27B0", fg="white", font=("Segoe UI", 11, "bold"), width=12).pack(side="left", padx=20, pady=8)
 tk.Button(click_row2, text="Hold Key (F9)", command=lambda: stop_holding_click() if holding_click else start_holding_click(),
           bg="#FF9800", fg="white", font=("Segoe UI", 11, "bold"), width=12).pack(side="right", padx=20, pady=8)
+tk.Button(click_row2, text="Set Start/Stop Key", command=set_start_stop_key,
+          bg="#03A9F4", fg="white", font=("Segoe UI", 11, "bold"), width=25).pack(pady=8)
+
 
 # Position management frame
 pos_frame = tk.LabelFrame(root, text="Positions", fg="lightgray", bg="#2e2e2e", font=("Segoe UI", 11, "bold"))
