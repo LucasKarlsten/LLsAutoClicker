@@ -351,20 +351,31 @@ def toggle_clicking_hotkey():
 def mouse_button5_interrupt(button, pressed):
     """Handle mouse button 5 (side button) to stop clicking."""
     global clicking
-    if pressed and button == pynput_mouse.Button.x2:  # x2 is mouse button 5
-        if clicking:
-            stop_clicking()
-            update_status("Clicking stopped by Mouse Button 5.", "#f44336")
+    try:
+        # Debug: print all button clicks to see what buttons are being pressed
+        if pressed:
+            print(f"Mouse button clicked: {button}")
+        
+        # Check if this is the forward button (button 5 / x2)
+        if pressed and (button == pynput_mouse.Button.x2 or (hasattr(button, 'value') and button.value == 5)):
+            if clicking:
+                stop_clicking()
+                update_status("Clicking stopped by Mouse Button 5.", "#f44336")
+                print("Mouse button 5 detected - stopping clicks!")
+    except Exception as e:
+        print(f"Mouse listener error: {e}")
 
 keyboard.add_hotkey('f8', toggle_clicking_hotkey)
 keyboard.add_hotkey('f9', lambda: stop_holding_click() if holding_click else start_holding_click())
 
 # Register mouse button 5 listener
+mouse_listener = None
 try:
-    listener = pynput_mouse.Listener(on_click=mouse_button5_interrupt)
-    listener.start()
-except:
-    pass  # Mouse listener might not work in all environments
+    mouse_listener = pynput_mouse.Listener(on_click=mouse_button5_interrupt)
+    mouse_listener.start()
+    print("Mouse listener started successfully")
+except Exception as e:
+    print(f"Failed to start mouse listener: {e}")  # Mouse listener might not work in all environments
 
 
 # === GUI Layout ===
@@ -438,4 +449,14 @@ credits.pack(side="bottom", pady=6)
 update_profile_list()
 update_position_list()
 
-root.mainloop()
+print("Auto-clicker started successfully!")
+print("Mouse button 5 listener active for stopping clicks")
+
+try:
+    root.mainloop()
+except Exception as e:
+    print(f"Error in main loop: {e}")
+    import traceback
+    traceback.print_exc()
+    input("Press Enter to exit...")
+
