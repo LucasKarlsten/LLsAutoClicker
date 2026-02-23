@@ -4,7 +4,7 @@ import pyautogui
 import time
 import json
 import keyboard
-from pynput import mouse as pynput_mouse
+import mouse
 import os
 
 # === Globals ===
@@ -348,34 +348,24 @@ def toggle_clicking_hotkey():
     else:
         start_clicking()
 
-def mouse_button5_interrupt(button, pressed):
-    """Handle mouse button 5 (side button) to stop clicking."""
+def mouse_button5_interrupt():
+    """Stop clicking when mouse button 5 (side button) is pressed."""
     global clicking
-    try:
-        # Debug: print all button clicks to see what buttons are being pressed
-        if pressed:
-            print(f"Mouse button clicked: {button}")
-        
-        # Check if this is the forward button (button 5 / x2)
-        if pressed and (button == pynput_mouse.Button.x2 or (hasattr(button, 'value') and button.value == 5)):
-            if clicking:
-                stop_clicking()
-                update_status("Clicking stopped by Mouse Button 5.", "#f44336")
-                print("Mouse button 5 detected - stopping clicks!")
-    except Exception as e:
-        print(f"Mouse listener error: {e}")
+    if clicking:
+        stop_clicking()
+        update_status("Clicking stopped by Mouse Button 5.", "#f44336")
 
 keyboard.add_hotkey('f8', toggle_clicking_hotkey)
 keyboard.add_hotkey('f9', lambda: stop_holding_click() if holding_click else start_holding_click())
+keyboard.add_hotkey('f10', stop_clicking)  # F10 as backup keyboard stop
 
-# Register mouse button 5 listener
-mouse_listener = None
+# Register mouse button 5 (X2) listener
 try:
-    mouse_listener = pynput_mouse.Listener(on_click=mouse_button5_interrupt)
-    mouse_listener.start()
-    print("Mouse listener started successfully")
+    mouse.on_click(mouse_button5_interrupt, button='x2')
+    print("Mouse button 5 listener registered!")
 except Exception as e:
-    print(f"Failed to start mouse listener: {e}")  # Mouse listener might not work in all environments
+    print(f"Mouse button 5 registration error: {e}")
+    print("Using keyboard shortcuts only (F8, F9, F10)")
 
 
 # === GUI Layout ===
@@ -414,7 +404,7 @@ click_row2.pack(fill="x", padx=5, pady=(1, 0))
 
 tk.Button(click_row1, text="Start (F8)", command=start_clicking,
           bg="#4CAF50", fg="white", font=("Segoe UI", 11, "bold"), width=9).pack(side="left", padx=5, pady=8)
-tk.Button(click_row1, text="Stop (F8)", command=stop_clicking,
+tk.Button(click_row1, text="Stop (Mouse 5/F10)", command=stop_clicking,
           bg="#f44336", fg="white", font=("Segoe UI", 11, "bold"), width=9).pack(side="left", padx=5, pady=8)
 tk.Button(click_row1, text="Set Interval", command=set_interval,
           bg="#00BCD4", fg="white", font=("Segoe UI", 11, "bold"), width=9).pack(side="left", padx=5, pady=8)
@@ -450,7 +440,7 @@ update_profile_list()
 update_position_list()
 
 print("Auto-clicker started successfully!")
-print("Mouse button 5 listener active for stopping clicks")
+print("Controls: Mouse Button 5 = Stop, F8 = Toggle, F9 = Hold, F10 = Stop (backup)")
 
 try:
     root.mainloop()
