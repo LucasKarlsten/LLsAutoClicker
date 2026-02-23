@@ -4,7 +4,7 @@ import pyautogui
 import time
 import json
 import keyboard
-import mouse
+from pynput import mouse as pynput_mouse
 import os
 
 # === Globals ===
@@ -348,16 +348,23 @@ def toggle_clicking_hotkey():
     else:
         start_clicking()
 
-def mouse_button5_interrupt(event):
+def mouse_button5_interrupt(button, pressed):
     """Handle mouse button 5 (side button) to stop clicking."""
-    if event.button == 'x2':  # x2 is mouse button 5 (forward side button)
+    global clicking
+    if pressed and button == pynput_mouse.Button.x2:  # x2 is mouse button 5
         if clicking:
             stop_clicking()
             update_status("Clicking stopped by Mouse Button 5.", "#f44336")
 
 keyboard.add_hotkey('f8', toggle_clicking_hotkey)
 keyboard.add_hotkey('f9', lambda: stop_holding_click() if holding_click else start_holding_click())
-mouse.on_click(mouse_button5_interrupt)  # Listen for any mouse button click
+
+# Register mouse button 5 listener
+try:
+    listener = pynput_mouse.Listener(on_click=mouse_button5_interrupt)
+    listener.start()
+except:
+    pass  # Mouse listener might not work in all environments
 
 
 # === GUI Layout ===
